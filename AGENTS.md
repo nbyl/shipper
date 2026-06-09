@@ -35,7 +35,7 @@ Shipper is a template repo of OpenCode slash commands and subagents — not an a
 
 ## Commits
 
-- `.pre-commit-config.yaml` installs `commitizen` on the `commit-msg` stage. Commit messages must follow Conventional Commits (`feat:`, `docs:`, `fix:`, …). Existing history follows this.
+- Conventional Commits are enforced via a GitHub Action on PR title (`.github/workflows/pr-title.yml`), not on individual commit messages. This lets contributors commit freely while keeping PR history clean.
 - Other pre-commit hooks are generic hygiene (trailing whitespace, YAML/JSON checks, etc.). Several are Python-oriented (`double-quote-string-fixer`, `fix-encoding-pragma`) but harmless on this repo's content.
 
 ## Gotchas
