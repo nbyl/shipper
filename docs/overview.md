@@ -25,6 +25,14 @@ Shipper manages the entire loop:
 6. **Review**: Self-healing loops based on review feedback.
 7. **Notification**: Informing the user upon completion.
 
+## Stability tiers
+Shipper commands and agents are classified into two release tiers so users get reliability by default and can explicitly opt in to in-development pieces:
+
+* **Stable**: items that have been validated and install by default. They live under `command/stable/` and `agents/stable/`.
+* **Beta**: items that are still being iterated on. They live under `command/beta/` and `agents/beta/` and only install when a user sets `SHIPPER_INCLUDE_BETA` to a truthy value in `.env.shipper`.
+
+The install script flattens stable and beta into a single `.opencode/agents/` and `.opencode/command/` so that OpenCode continues to resolve slash-command names normally regardless of tier. Promoting an item from beta to stable is a single `git mv` from one subdirectory to the other.
+
 ## Installation & Configuration
 Shipper prioritizes flexibility. It includes an automated installation script that detects the environment and configures the necessary integrations:
 * **Documentation**: Connects to your knowledge base (e.g., `context7`).
