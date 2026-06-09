@@ -13,7 +13,7 @@ Shipper is a template repo of OpenCode slash commands and subagents — not an a
 - Run from the directory that should receive `.opencode/` (`DEST_DIR="$PWD"`). For local dev on Shipper itself, run it from this repo root.
 - Requires a `.env.shipper` in the working directory. Format is `KEY=value`, `#` comments allowed, optional surrounding quotes are stripped.
 - Substitutes both `${KEY}` and `$KEY` forms in every file under `.opencode/agents/` and `.opencode/command/` via `sed`. Detects GNU vs BSD `sed` automatically.
-- Current variables in use: `TICKET_TOOL`, `RESEARCH_MODEL`, `RESEARCH_TOOL`. Add new ones to `.env.shipper` and reference them as `$VAR` in source markdown.
+- Current variables in use: `TICKET_TOOL`, `REPOSITORY_TOOL`, `RESEARCH_MODEL`, `RESEARCH_TOOL`. Add new ones to `.env.shipper` and reference them as `$VAR` in source markdown.
 
 ## File / command conventions
 
@@ -31,5 +31,5 @@ Shipper is a template repo of OpenCode slash commands and subagents — not an a
 ## Gotchas
 
 - End-user docs live in `README.md` at repo root; the full vision, pipeline description, and roadmap live in `docs/overview.md`.
-- All four commands in `command/` are installable, but `/shipper:plan` is currently hardcoded to Linear and `/shipper:merge-request` is currently hardcoded to GitLab + Linear — they ignore `TICKET_TOOL`. `/shipper:ship` and `/shipper:fix-review-issues` are mentioned in `docs/overview.md` but not implemented yet.
+- All four commands in `command/` honor `$TICKET_TOOL`; `/shipper:merge-request` additionally uses `$REPOSITORY_TOOL` for the code-hosting platform. `/shipper:ship` and `/shipper:fix-review-issues` are mentioned in `docs/overview.md` but not implemented yet.
 - `.opencode/package.json` pins `@opencode-ai/plugin` but no plugin source exists yet. Ignore unless adding one.
