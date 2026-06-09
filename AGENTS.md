@@ -30,5 +30,6 @@ Shipper is a template repo of OpenCode slash commands and subagents — not an a
 
 ## Gotchas
 
-- The README advertises `/shipper:refine`, `/shipper:ship`, `/shipper:fix-review-issues`. Only `/shipper:research` exists today — the rest are roadmap.
+- End-user docs live in `README.md` at repo root; the full vision, pipeline description, and roadmap live in `docs/overview.md`.
+- All four commands in `command/` are installable, but `/shipper:plan` is currently hardcoded to Linear and `/shipper:merge-request` is currently hardcoded to GitLab + Linear — they ignore `TICKET_TOOL`. `/shipper:ship` and `/shipper:fix-review-issues` are mentioned in `docs/overview.md` but not implemented yet.
 - `.opencode/package.json` pins `@opencode-ai/plugin` but no plugin source exists yet. Ignore unless adding one.
