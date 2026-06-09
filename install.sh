@@ -5,8 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEST_DIR="$PWD"
 
 ENV_FILE="$DEST_DIR/.env.shipper"
-SRC_AGENTS="$SCRIPT_DIR/agents"
-SRC_COMMANDS="$SCRIPT_DIR/command"
+SRC_AGENTS_STABLE="$SCRIPT_DIR/agents/stable"
+SRC_AGENTS_BETA="$SCRIPT_DIR/agents/beta"
+SRC_COMMANDS_STABLE="$SCRIPT_DIR/command/stable"
+SRC_COMMANDS_BETA="$SCRIPT_DIR/command/beta"
 DEST_ROOT="$DEST_DIR/.opencode"
 DEST_AGENTS="$DEST_ROOT/agents"
 DEST_COMMANDS="$DEST_ROOT/command"
@@ -16,23 +18,17 @@ if [[ ! -f "$ENV_FILE" ]]; then
     echo "error: $ENV_FILE not found" >&2
     exit 1
 fi
-if [[ ! -d "$SRC_AGENTS" ]]; then
-    echo "error: source directory '$SRC_AGENTS' not found" >&2
-    exit 1
-fi
-if [[ ! -d "$SRC_COMMANDS" ]]; then
-    echo "error: source directory '$SRC_COMMANDS' not found" >&2
-    exit 1
-fi
-
-# --- Copy (overlay) -----------------------------------------------------------
-mkdir -p "$DEST_AGENTS" "$DEST_COMMANDS"
-cp -R "$SRC_AGENTS/." "$DEST_AGENTS/"
-cp -R "$SRC_COMMANDS/." "$DEST_COMMANDS/"
+for d in "$SRC_AGENTS_STABLE" "$SRC_AGENTS_BETA" "$SRC_COMMANDS_STABLE" "$SRC_COMMANDS_BETA"; do
+    if [[ ! -d "$d" ]]; then
+        echo "error: source directory '$d' not found" >&2
+        exit 1
+    fi
+done
 
 # --- Parse .env.shipper -------------------------------------------------------
 KEYS=()
 VALUES=()
+INCLUDE_BETA=0
 while IFS= read -r line || [[ -n "$line" ]]; do
     # strip leading/trailing whitespace
     line="${line#"${line%%[![:space:]]*}"}"
@@ -51,7 +47,39 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     fi
     KEYS+=("$key")
     VALUES+=("$value")
+    # Detect beta opt-in (case-insensitive: 1, true, yes, on)
+    if [[ "$key" == "SHIPPER_INCLUDE_BETA" ]]; then
+        case "$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')" in
+            1|true|yes|on) INCLUDE_BETA=1 ;;
+            *) INCLUDE_BETA=0 ;;
+        esac
+    fi
 done < "$ENV_FILE"
+
+# --- Copy (overlay) -----------------------------------------------------------
+# install.sh overlays on each run: it never wipes .opencode/agents/ or
+# .opencode/command/ before copying. Toggling SHIPPER_INCLUDE_BETA off after a
+# beta install will NOT remove previously installed beta files; remove
+# .opencode/ manually or re-run after deleting stale files.
+mkdir -p "$DEST_AGENTS" "$DEST_COMMANDS"
+
+cp -R "$SRC_AGENTS_STABLE/." "$DEST_AGENTS/"
+cp -R "$SRC_COMMANDS_STABLE/." "$DEST_COMMANDS/"
+
+if [[ "$INCLUDE_BETA" -eq 1 ]]; then
+    cp -R "$SRC_AGENTS_BETA/." "$DEST_AGENTS/"
+    cp -R "$SRC_COMMANDS_BETA/." "$DEST_COMMANDS/"
+fi
+
+# Remove any .gitkeep placeholders carried over from empty source dirs.
+find "$DEST_AGENTS" "$DEST_COMMANDS" -name '.gitkeep' -type f -delete
+
+# Count installed files (post-cleanup) for the summary message.
+STABLE_COUNT=$(find "$SRC_AGENTS_STABLE" "$SRC_COMMANDS_STABLE" -type f ! -name '.gitkeep' | wc -l | tr -d ' ')
+BETA_COUNT=0
+if [[ "$INCLUDE_BETA" -eq 1 ]]; then
+    BETA_COUNT=$(find "$SRC_AGENTS_BETA" "$SRC_COMMANDS_BETA" -type f ! -name '.gitkeep' | wc -l | tr -d ' ')
+fi
 
 # --- Detect sed flavor --------------------------------------------------------
 if sed --version >/dev/null 2>&1; then
@@ -85,4 +113,8 @@ for ((i = 0; i < ${#KEYS[@]}; i++)); do
     done
 done
 
-echo "Installed ${#TARGET_FILES[@]} file(s) into $DEST_ROOT; substituted ${#KEYS[@]} variable(s)."
+if [[ "$INCLUDE_BETA" -eq 1 ]]; then
+    echo "Installed ${#TARGET_FILES[@]} file(s) into $DEST_ROOT (stable: $STABLE_COUNT, beta: $BETA_COUNT); substituted ${#KEYS[@]} variable(s)."
+else
+    echo "Installed ${#TARGET_FILES[@]} file(s) into $DEST_ROOT (stable only); substituted ${#KEYS[@]} variable(s). Set SHIPPER_INCLUDE_BETA=true in .env.shipper to include beta items."
+fi
